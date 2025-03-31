@@ -70,6 +70,7 @@ async def render_error_page(
         },
     )
 
+
 @router.get(
     "/bundle/{bundle_id}",
     response_class=HTMLResponse,
