@@ -14,6 +14,7 @@ from app_distribution_server.config import (
 )
 from app_distribution_server.qrcode import get_qr_code_svg
 from app_distribution_server.storage import (
+    get_latest_upload_id_by_bundle_id,
     get_upload_asserted_platform,
     load_build_info,
 )
@@ -68,3 +69,19 @@ async def render_error_page(
             "error_message": f"{user_error.status_code} - {user_error.detail}",
         },
     )
+
+@router.get(
+    "/bundle/{bundle_id}",
+    response_class=HTMLResponse,
+    summary="Landing page for the latest app build of a bundle ID",
+)
+async def render_latest_bundle_installation_page(
+    request: Request,
+    bundle_id: str,
+) -> HTMLResponse:
+    upload_id = get_latest_upload_id_by_bundle_id(bundle_id)
+
+    if not upload_id:
+        raise FastApiHTTPException(status_code=404, detail="No builds found for this bundle ID")
+
+    return await render_get_item_installation_page(request, upload_id)
