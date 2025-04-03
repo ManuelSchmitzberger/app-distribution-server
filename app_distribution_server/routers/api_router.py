@@ -4,6 +4,8 @@ from fastapi import Form
 from fastapi import APIRouter, Depends, File, Path, UploadFile
 from fastapi.responses import PlainTextResponse
 from fastapi.security import APIKeyHeader
+from uuid import uuid4
+from datetime import datetime, timezone
 
 from app_distribution_server.build_info import (
     BuildInfo,
@@ -195,3 +197,44 @@ def api_get_tagged_upload(
 
     get_upload_asserted_platform(upload_id)
     return load_build_info(upload_id)
+
+@router.post("/api/link", summary="Register external Gitlab URL")
+def register_external_build(
+    bundle_id: str = Form(...),
+    app_title: str = Form(...),
+    bundle_version: str = Form(...),
+    platform: Platform = Form(...),
+    external_gitlab_url: str = Form(...),
+    tag: str | None = Form(default=None),
+) -> BuildInfo:
+    upload_id = str(uuid4())
+
+    build_info = BuildInfo(
+        upload_id=upload_id,
+        app_title=app_title,
+        bundle_id=bundle_id,
+        bundle_version=bundle_version,
+        platform=platform,
+        file_size=0,  # Optional: leave 0 for links
+        created_at=datetime.now(timezone.utc),
+        external_gitlab_url=external_gitlab_url,
+        tag=tag,
+    )
+
+    save_upload(build_info, b"")  # Store metadata only
+
+    if tag:
+        save_tag_for_upload(bundle_id, tag, upload_id)
+
+    lines = [
+        "Upload successful!",
+        f"Build tag: {tag or 'none'}",
+        f"Direct download link: {get_absolute_url(f'/get/{build_info.upload_id}')}",
+        f"Bundle download link: {get_absolute_url(f'/bundle/{build_info.bundle_id}')}",
+    ]
+    if tag:
+        lines.append(
+            f"Bundle download link - tag: {get_absolute_url(f'/bundle/{build_info.bundle_id}/{tag}')}"
+        )
+    content = "\n".join(lines) + "\n"
+    return PlainTextResponse(content=content)

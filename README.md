@@ -58,6 +58,21 @@ Where `your-app-build.ipa` or `your-app-build.apk` is your iOS or Android build 
 
 The response will include a public installation link.
 
+Optional it's possible to provide an external Gitlab link:
+```
+
+curl -X POST \
+  "http://localhost:8000/api/link" \
+  -H "Accept: application/json" \
+  -H "X-Auth-Token: secret" \
+  -F bundle_id=com.company.app \
+  -F app_title="My GitLab App" \
+  -F bundle_version=6.0.0 \
+  -F platform=android \
+  -F external_url=https:///$GITLAB_URL/api/v4/projects/${projectId}/jobs/${job}/artifacts/${artifactPath}/${artifact} \
+  -F tag=v6.0.0
+```
+
 ---
 
 ### Fetching builds

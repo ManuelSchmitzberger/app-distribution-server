@@ -1,13 +1,17 @@
 from typing import Literal
 
+import httpx
+from fastapi.responses import StreamingResponse
 from fastapi import APIRouter, Request, Response
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from fastapi import HTTPException
 
 from app_distribution_server.build_info import (
     Platform,
 )
 from app_distribution_server.config import (
+    GITLAB_ACCESS_TOKEN,
     get_absolute_url,
 )
 from app_distribution_server.storage import (
@@ -57,10 +61,33 @@ async def get_app_file(
     upload_id: str,
     file_type: Literal["ipa", "apk"],
 ) -> Response:
+    build_info = load_build_info(upload_id)
     expected_platform = Platform.ios if file_type == "ipa" else Platform.android
     get_upload_asserted_platform(upload_id, expected_platform=expected_platform)
 
-    build_info = load_build_info(upload_id)
+    # PROXY: GitLab Artifact Handling
+    if build_info.external_gitlab_url:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                build_info.external_gitlab_url,
+                headers={"PRIVATE-TOKEN": GITLAB_ACCESS_TOKEN},
+                follow_redirects=True,
+            )
+
+        if response.status_code != 200:
+            raise HTTPException(
+                status_code=502,
+                detail=f"Failed to download artifact from GitLab: {response.status_code}",
+            )
+
+        return StreamingResponse(
+            response.aiter_bytes(),
+            media_type="application/octet-stream",
+            headers={
+                "Content-Disposition": f"attachment; filename={build_info.app_title}.{file_type}"
+            }
+        )
+
     app_file_content = load_app_file(build_info)
 
     created_at_prefix = (
