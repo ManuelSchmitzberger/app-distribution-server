@@ -69,6 +69,7 @@ class BuildInfo(LegacyAppInfo):
     created_at: datetime | None
     platform: Platform
     tag: Optional[str] = None
+    external_gitlab_url: Optional[str] = None
 
     @property
     def human_file_size(self) -> str:

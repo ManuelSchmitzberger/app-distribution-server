@@ -35,14 +35,15 @@ async def render_get_item_installation_page(
     upload_id: str,
 ) -> HTMLResponse:
     platform = get_upload_asserted_platform(upload_id)
+    build_info = load_build_info(upload_id)
 
-    if platform == Platform.ios:
+    if build_info.external_gitlab_url:
+        install_url = build_info.external_gitlab_url
+    elif platform == Platform.ios:
         plist_url = get_absolute_url(f"/get/{upload_id}/app.plist")
         install_url = f"itms-services://?action=download-manifest&url={plist_url}"
     else:
         install_url = get_absolute_url(f"/get/{upload_id}/app.apk")
-
-    build_info = load_build_info(upload_id)
 
     return templates.TemplateResponse(
         request=request,
