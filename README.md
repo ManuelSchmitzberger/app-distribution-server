@@ -31,22 +31,50 @@ docker run \
   ghcr.io/significa/app-distribution-server
 ```
 
+### Upload a build
+
 To upload your built iOS or Android app, just run:
 
-```
-curl -X "POST" \
+```sh
+curl -X POST \
   "http://localhost:8000/upload" \
   -H "Accept: application/json" \
   -H "X-Auth-Token: secret" \
-  -H "Content-Type: multipart/form-data" \
   -F "app_file=@your-app-build.ipa"
 ```
 
-Where `your-app-build.ipa` is your iOS IPA build or Android APK (ex: `your-app-build.apk`).
+Or include an optional `tag` to make builds accessible by version:
 
-This will return a link to the installation page.
+```sh
+curl -X POST \
+  "http://localhost:8000/upload" \
+  -H "Accept: application/json" \
+  -H "X-Auth-Token: secret" \
+  -F "app_file=@your-app-build.apk" \
+  -F "tag=v6.0.0"
+```
 
-More documentation in the Swagger OpenAPI explorer available on `/docs`.
+Where `your-app-build.ipa` or `your-app-build.apk` is your iOS or Android build file.
+
+The response will include a public installation link.
+
+---
+
+### Fetching builds
+
+You can retrieve builds using either the latest upload per bundle ID, or a specific tagged version:
+
+| Endpoint                                      | Description                                                              |
+|----------------------------------------------|--------------------------------------------------------------------------|
+| `/get/{upload_id}`                           | Public HTML download page with QR code for installation.                |
+| `/bundle/{bundle_id}`                        | Public install page for the latest build of the given bundle ID.        |
+| `/bundle/{bundle_id}/{tag}`                  | Public install page for the tagged version of the given bundle ID.      |
+
+Each API response includes detailed `BuildInfo`.  
+Use `/get/{upload_id}` for user-friendly install pages.
+
+More documentation in the Swagger OpenAPI explorer available at `/docs`.
+
 
 ## Upgrading / migration to v2
 

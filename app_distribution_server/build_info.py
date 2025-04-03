@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from io import BytesIO
 from uuid import uuid4
+from typing import Optional
 
 from androguard.core.apk import APK, get_apkid
 from pydantic import BaseModel, field_validator
@@ -62,6 +63,7 @@ class BuildInfo(LegacyAppInfo):
     file_size: int
     created_at: datetime | None
     platform: Platform
+    tag: Optional[str] = None
 
     @property
     def human_file_size(self) -> str:

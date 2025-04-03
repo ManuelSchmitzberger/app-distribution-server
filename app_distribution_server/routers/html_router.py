@@ -17,6 +17,7 @@ from app_distribution_server.storage import (
     get_latest_upload_id_by_bundle_id,
     get_upload_asserted_platform,
     load_build_info,
+    get_upload_id_by_tag,
 )
 
 router = APIRouter(tags=["HTML page handling"])
@@ -84,5 +85,22 @@ async def render_latest_bundle_installation_page(
 
     if not upload_id:
         raise FastApiHTTPException(status_code=404, detail="No builds found for this bundle ID")
+
+    return await render_get_item_installation_page(request, upload_id)
+
+@router.get(
+    "/bundle/{bundle_id}/{tag}",
+    response_class=HTMLResponse,
+    summary="Landing page for a specific tagged app build of a bundle ID",
+)
+async def render_tagged_bundle_installation_page(
+    request: Request,
+    bundle_id: str,
+    tag: str,
+) -> HTMLResponse:
+    upload_id = get_upload_id_by_tag(bundle_id, tag)
+
+    if not upload_id:
+        raise FastApiHTTPException(status_code=404, detail="No builds found for this tag")
 
     return await render_get_item_installation_page(request, upload_id)

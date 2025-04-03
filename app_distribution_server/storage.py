@@ -157,3 +157,26 @@ def get_latest_upload_id_by_bundle_id(bundle_id: str) -> str | None:
 
     with filesystem.open(filepath, "r") as file:
         return file.readline().strip()
+
+def get_tagged_upload_by_bundle_id_filepath(bundle_id: str, tag: str) -> str:
+    return path.join(INDEXES_DIRECTORY, "tagged_upload_by_bundle_id", bundle_id, f"{tag}.txt")
+
+def save_tag_for_upload(bundle_id: str, tag: str, upload_id: str):
+    filepath = get_tagged_upload_by_bundle_id_filepath(bundle_id, tag)
+    filesystem.makedirs(path.dirname(filepath), recreate=True)
+
+    with filesystem.open(filepath, "w") as f:
+        f.write(upload_id)
+    logger.info(f"Saved tag {tag!r} for bundle {bundle_id!r} to {upload_id!r}")
+
+
+def get_upload_id_by_tag(bundle_id: str, tag: str) -> str | None:
+    filepath = get_tagged_upload_by_bundle_id_filepath(bundle_id, tag)
+
+    logger.info(f"Retrieving tagged upload id for bundle {bundle_id!r} tag {tag!r} ({filepath!r})")
+
+    if not filesystem.exists(filepath):
+        return None
+
+    with filesystem.open(filepath, "r") as f:
+        return f.readline().strip()

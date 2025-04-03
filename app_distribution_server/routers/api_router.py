@@ -1,5 +1,6 @@
 import secrets
 
+from fastapi import Form
 from fastapi import APIRouter, Depends, File, Path, UploadFile
 from fastapi.responses import PlainTextResponse
 from fastapi.security import APIKeyHeader
@@ -25,6 +26,8 @@ from app_distribution_server.storage import (
     get_upload_asserted_platform,
     load_build_info,
     save_upload,
+    save_tag_for_upload,
+    get_upload_id_by_tag,
 )
 
 x_auth_token_dependency = APIKeyHeader(name="X-Auth-Token")
@@ -45,6 +48,7 @@ router = APIRouter(
 
 def _upload_app(
     app_file: UploadFile,
+    tag: str | None = None,
 ) -> BuildInfo:
     platform: Platform
 
@@ -63,11 +67,15 @@ def _upload_app(
     app_file_content = app_file.file.read()
 
     build_info = get_build_info(platform, app_file_content)
+    build_info.tag = tag
     upload_id = build_info.upload_id
 
     logger.debug(f"Starting upload of {upload_id!r}")
 
     save_upload(build_info, app_file_content)
+
+    if build_info.tag:
+        save_tag_for_upload(build_info.bundle_id, build_info.tag, build_info.upload_id)
 
     logger.info(f"Successfully uploaded {build_info.bundle_id!r} ({upload_id!r})")
 
@@ -91,9 +99,9 @@ _upload_route_kwargs = {
 @router.post("/upload", **_upload_route_kwargs)
 def _plaintext_post_upload(
     app_file: UploadFile = File(description="An `.ipa` or `.apk` build"),
+    tag: str | None = Form(default=None)
 ) -> PlainTextResponse:
-    build_info = _upload_app(app_file)
-
+    build_info = _upload_app(app_file, tag)
     return PlainTextResponse(
         content=get_absolute_url(f"/get/{build_info.upload_id}"),
     )
@@ -102,8 +110,10 @@ def _plaintext_post_upload(
 @router.post("/api/upload", **_upload_route_kwargs)
 def _json_api_post_upload(
     app_file: UploadFile = File(description="An `.ipa` or `.apk` build"),
+    tag: str | None = Form(default=None)
 ) -> BuildInfo:
-    return _upload_app(app_file)
+    build_info = _upload_app(app_file, tag)
+    return build_info
 
 
 async def _api_delete_app_upload(
@@ -141,6 +151,22 @@ def api_get_latest_upload_by_bundle_id(
     ),
 ) -> BuildInfo:
     upload_id = get_latest_upload_id_by_bundle_id(bundle_id)
+
+    if not upload_id:
+        raise NotFoundError()
+
+    get_upload_asserted_platform(upload_id)
+    return load_build_info(upload_id)
+
+@router.get(
+    "/api/bundle/{bundle_id}/{tag}",
+    summary="Retrieve a tagged upload from a bundle ID",
+)
+def api_get_tagged_upload(
+    bundle_id: str = Path(pattern=r"^[a-zA-Z0-9\.\-]{1,256}$"),
+    tag: str = Path(pattern=r"^v\d+\.\d+\.\d+$"),
+) -> BuildInfo:
+    upload_id = get_upload_id_by_tag(bundle_id, tag)
 
     if not upload_id:
         raise NotFoundError()
