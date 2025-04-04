@@ -102,9 +102,19 @@ def _plaintext_post_upload(
     tag: str | None = Form(default=None)
 ) -> PlainTextResponse:
     build_info = _upload_app(app_file, tag)
-    return PlainTextResponse(
-        content=get_absolute_url(f"/get/{build_info.upload_id}"),
-    )
+
+    lines = [
+        "Upload successful!",
+        f"Build tag: {tag or 'none'}",
+        f"Direct download link: {get_absolute_url(f'/get/{build_info.upload_id}')}",
+        f"Bundle download link: {get_absolute_url(f'/bundle/{build_info.bundle_id}')}",
+    ]
+    if tag:
+        lines.append(
+            f"Bundle download link - tag: {get_absolute_url(f'/bundle/{build_info.bundle_id}/{tag}')}"
+        )
+    content = "\n".join(lines) + "\n"
+    return PlainTextResponse(content=content)
 
 
 @router.post("/api/upload", **_upload_route_kwargs)
@@ -113,7 +123,19 @@ def _json_api_post_upload(
     tag: str | None = Form(default=None)
 ) -> BuildInfo:
     build_info = _upload_app(app_file, tag)
-    return build_info
+
+    lines = [
+        "Upload successful!",
+        f"Build tag: {tag or 'none'}",
+        f"Direct download link: {get_absolute_url(f'/get/{build_info.upload_id}')}",
+        f"Bundle download link: {get_absolute_url(f'/bundle/{build_info.bundle_id}')}",
+    ]
+    if tag:
+        lines.append(
+            f"Bundle download link - tag: {get_absolute_url(f'/bundle/{build_info.bundle_id}/{tag}')}"
+        )
+    content = "\n".join(lines) + "\n"
+    return PlainTextResponse(content=content)
 
 
 async def _api_delete_app_upload(
