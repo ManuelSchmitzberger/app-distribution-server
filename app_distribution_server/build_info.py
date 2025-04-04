@@ -17,6 +17,11 @@ from pydantic import BaseModel, field_validator
 from app_distribution_server.errors import InvalidFileTypeError
 from app_distribution_server.logger import logger
 
+# Disable logging from androguard
+# This is necessary to avoid a lot of noise in the logs.
+from loguru import logger
+logger.remove()
+logger.disable("androguard")
 
 class Platform(str, Enum):
     ios = "ios"
