@@ -56,9 +56,9 @@ class LegacyAppInfo(BaseModel):
 
     @field_validator("bundle_id")
     def validate_bundle_id(cls, v):
-        if not re.match(r"^[a-zA-Z0-9\.\-]{1,256}$", v):
+        if not re.match(r"^[a-zA-Z0-9\.\-_]{1,256}$", v):  # ← hier: _ hinzugefügt
             raise ValueError(
-                "Bundle ID can only contain alphanumeric characters, dots and hyphens."
+                "Bundle ID can only contain alphanumeric characters, dots, hyphens and underscores."
             )
         return v
 
