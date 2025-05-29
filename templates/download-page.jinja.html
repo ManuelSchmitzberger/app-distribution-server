@@ -5,7 +5,9 @@
     <h1>{{ build_info.app_title }}</h1>
     <pre>{{ build_info.platform.display_name }}</pre>
     <pre>{{ build_info.bundle_version }}</pre>
-    <pre>{{ build_info.human_file_size }}</pre>
+    {% if not build_info.external_gitlab_url %}
+      <pre>{{ build_info.human_file_size }}</pre>
+    {% endif %}
     {% if build_info.created_at %}
       <time datetime="{{ build_info.created_at }}">{{ build_info.created_at }}</time>
     {% endif %}
